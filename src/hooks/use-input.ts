@@ -1,5 +1,24 @@
 import React from 'react';
 
+const initialInputState = { value: '', isTouched: false };
+type InputStateType = typeof initialInputState;
+
+const inputStateReducer = (
+  state: InputStateType,
+  action: any
+): InputStateType => {
+  if (action.type === 'INPUT') {
+    return { value: action.value, isTouched: state.isTouched };
+  }
+  if (action.type === 'BLUR') {
+    return { value: state.value, isTouched: true };
+  }
+  if (action.type === 'RESET') {
+    return { value: '', isTouched: false };
+  }
+  return initialInputState;
+};
+
 interface useInputInterface {
   value: string;
   isValid: boolean;
@@ -9,32 +28,33 @@ interface useInputInterface {
   reset: () => void;
 }
 
-type validateValueFn = (arg: string) => boolean;
+const useInput = (
+  validateValue: (arg: string) => boolean
+): useInputInterface => {
+  const [inputState, dispatch] = React.useReducer(
+    inputStateReducer,
+    initialInputState
+  );
 
-const useInput = (validateValue: validateValueFn): useInputInterface => {
-  const [enteredValue, setEnteredValue] = React.useState<string>('');
-  const [isTouched, setIsTouched] = React.useState<boolean>(false);
-
-  const valueIsValid: boolean = validateValue(enteredValue);
-  const hasError: boolean = !valueIsValid && isTouched;
+  const valueIsValid: boolean = validateValue(inputState.value);
+  const hasError: boolean = !valueIsValid && inputState.isTouched;
 
   const valueChangeHandler = (
     event: React.ChangeEvent<HTMLInputElement>
   ): void => {
-    setEnteredValue(event.target.value);
+    dispatch({ type: 'INPUT', value: event.target.value });
   };
 
   const inputBlurHandler = (): void => {
-    setIsTouched(true);
+    dispatch({ type: 'BLUR' });
   };
 
   const reset = () => {
-    setEnteredValue('');
-    setIsTouched(false);
+    dispatch({ type: 'RESET' });
   };
 
   return {
-    value: enteredValue,
+    value: inputState.value,
     isValid: valueIsValid,
     hasError: hasError,
     valueChangeHandler,
